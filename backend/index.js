@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const userRoutes = require('./routes/userRoutes');
 const fileRoutes = require('./routes/fileRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 const { connectToMongoDB, closeMongoDB } = require('./services/dbService');
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(express.json());
 // Routes
 app.use('/users', userRoutes);
 app.use('/files', fileRoutes);
+app.use('/chat', chatRoutes);
 
 // Start server
 app.listen(PORT, async () => {
