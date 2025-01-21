@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload & LLM Test</title>
+    <style>
+        body { padding: 20px; font-family: Arial; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .response { 
+            white-space: pre-wrap; 
+            background: #f0f0f0; 
+            padding: 10px; 
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            min-height: 50px;
+        }
+        .chat-container {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        #prompt {
+            width: 100%;
+            margin: 10px 0;
+            padding: 8px;
+        }
+        .control-group {
+            margin: 10px 0;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>File Upload</h2>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <h2>Files List</h2>
+        <div id="filesList"></div>
+
+        <div class="chat-container">
+            <h2>Chat with LLM</h2>
+            <div class="control-group">
+                <label for="llmSelect">Select LLM: </label>
+                <select id="llmSelect">
+                    <option value="gemini">Gemini</option>
+                    <option value="claude">Claude</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="prompt">Enter your prompt:</label>
+                <textarea id="prompt" rows="4" placeholder="Type your message here..."></textarea>
+                <button onclick="sendPrompt()">Send</button>
+            </div>
+            <h3>Response:</h3>
+            <div id="response" class="response">No response yet...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

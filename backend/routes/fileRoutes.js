@@ -1,15 +1,25 @@
 const express = require('express');
+const multer = require('multer');
+const fs = require('fs').promises;
+const path = require('path');
 const { uploadFile, downloadFile, listFiles } = require('../services/fileService');
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
-router.post('/upload', async (req, res, next) => {
-    const { filePath, fileName } = req.body;
-    if (!filePath || !fileName) return res.status(400).send('filePath and fileName are required');
+router.post('/upload', upload.single('file'), async (req, res, next) => {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded');
+    }
 
     try {
-        const message = await uploadFile(filePath, fileName);
-        res.status(200).send(message);
+        // Upload file and get the file ID
+        const result = await uploadFile(req.file.path, req.file.originalname);
+        
+        // Clean up the temporary file
+        await fs.unlink(req.file.path);
+        
+        res.status(200).json(result);
     } catch (err) {
         next(err);
     }
