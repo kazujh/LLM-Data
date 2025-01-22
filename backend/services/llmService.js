@@ -16,57 +16,68 @@ class LLMService {
     async prepareContext(fileIds) {
         if (!fileIds || fileIds.length === 0) return '';
         
-        const files = await getFilesByIds(fileIds);
-        return files.map(file => 
-            `File: ${file.filename}\nContent:\n${file.content}\n---\n`
-        ).join('\n');
+        try {
+            const files = await getFilesByIds(fileIds);
+            console.log('Retrieved files for context:', files.length);
+            
+            return files.map(file => 
+                `File: ${file.filename}\nContent:\n${file.content}\n---\n`
+            ).join('\n');
+        } catch (error) {
+            console.error('Error preparing context:', error);
+            throw error;
+        }
     }
 
     async queryGemini(prompt, fileIds = []) {
-        const context = await this.prepareContext(fileIds);
-        const fullPrompt = context ? `Relevant files:\n${context}\n\nQuestion: ${prompt}` : prompt;
-        
-        const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-pro' });
-        const result = await model.generateContent(fullPrompt);
-        console.log(result.response.text());
-        return result.response.text();
+        try {
+            const context = await this.prepareContext(fileIds);
+            console.log('Context prepared:', context ? 'Yes' : 'No');
+            
+            const fullPrompt = context 
+                ? `Context:\n${context}\n\nQuestion: ${prompt}` 
+                : prompt;
+            
+            console.log('Sending prompt to Gemini');
+            const model = this.gemini.getGenerativeModel({ model: 'gemini-1.5-pro' });
+            const result = await model.generateContent(fullPrompt);
+            
+            console.log('Received response from Gemini');
+            return result.response.text();
+        } catch (error) {
+            console.error('Gemini query error:', error);
+            throw error;
+        }
     }
 
-
     async queryClaude(prompt, fileIds = []) {
-        const context = await this.prepareContext(fileIds);
-        const fullPrompt = context ? `Relevant files:\n${context}\n\nQuestion: ${prompt}` : prompt;
-        const messages = [];
-        
-        if (context) {
-            messages.push({
-                role: "user",
-                content: `Here is the context:\n${context}`
+        try {
+            const context = await this.prepareContext(fileIds);
+            console.log('Context prepared:', context ? 'Yes' : 'No');
+            
+            const messages = [];
+            if (context) {
+                messages.push({
+                    role: "user",
+                    content: `Context:\n${context}`
+                });
+            }
+            
+            messages.push({ role: "user", content: prompt });
+            
+            console.log('Sending prompt to Claude');
+            const response = await this.anthropic.messages.create({
+                model: "claude-3-sonnet-20240229",
+                max_tokens: 1000,
+                messages: messages
             });
+            
+            console.log('Received response from Claude');
+            return response.content[0].text;
+        } catch (error) {
+            console.error('Claude query error:', error);
+            throw error;
         }
-
-        const payload = {
-            model: "claude-v1", // Replace with your actual model
-            max_tokens_to_sample: 1000, // Adjust based on your needs
-            prompt: fullPrompt,
-        };
-
-        const response = await axios.post(this.apiUrl, payload, {
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': process.env.ANTHROPIC_API_KEY,
-            },
-        });
-        
-        messages.push({ role: "user", content: prompt });
-
-        const message = await this.anthropic.messages.create({
-            model: "claude-3-sonnet-20241022",
-            max_tokens: 1000,
-            messages: messages
-        });
-
-        return response.data.completion
     }
 
     async queryLlama(prompt, fileIds = []) {

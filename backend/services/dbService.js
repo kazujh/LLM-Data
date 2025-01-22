@@ -1,33 +1,17 @@
 const mongoose = require('mongoose');
+require('dotenv').config();
 
-const uri = process.env.MONGO_URI || 'mongodb://localhost:27017';
-const dbName = process.env.DB_NAME || 'aidata';
-
-async function connectToMongoDB() {
+const connectDB = async () => {
     try {
-        await mongoose.connect(`${uri}/${dbName}`, {
+        await mongoose.connect(process.env.MONGO_URI, {
             useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+            useUnifiedTopology: true
         });
-        console.log('Connected to MongoDB successfully');
-    } catch (err) {
-        console.error('MongoDB connection error:', err);
+        console.log('MongoDB connected successfully');
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
         process.exit(1);
     }
-}
+};
 
-function getDatabase() {
-    return mongoose.connection.db;
-}
-
-async function closeMongoDB() {
-    try {
-        await mongoose.connection.close();
-        console.log('MongoDB connection closed');
-    } catch (err) {
-        console.error('Error closing MongoDB connection:', err);
-    }
-}
-
-module.exports = { connectToMongoDB, getDatabase, closeMongoDB };
+module.exports = { connectDB };

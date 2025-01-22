@@ -22,27 +22,18 @@ class ChatController {
 
     async sendMessage(req, res) {
         try {
-            console.log('Received message request:', req.body);
             const { sessionId, message, llmProvider, fileIds = [] } = req.body;
+            console.log('Processing message with files:', fileIds);
             
-            // Validation
-            if (!sessionId) {
-                console.error('No sessionId provided');
-                return res.status(400).json({ error: 'sessionId is required' });
-            }
-            if (!message) {
-                console.error('No message provided');
-                return res.status(400).json({ error: 'message is required' });
-            }
-            if (!llmProvider) {
-                console.error('No llmProvider specified');
-                return res.status(400).json({ error: 'llmProvider is required' });
+            if (!sessionId || !message || !llmProvider) {
+                return res.status(400).json({ 
+                    error: 'sessionId, message, and llmProvider are required' 
+                });
             }
 
             // Get file contents
             let context = '';
             if (fileIds && fileIds.length > 0) {
-                console.log('Processing files:', fileIds);
                 try {
                     const fileContents = await Promise.all(
                         fileIds.map(async (fileId) => {
@@ -51,39 +42,39 @@ class ChatController {
                         })
                     );
                     context = fileContents.join('\n');
-                    console.log('File context loaded');
+                    console.log('File context loaded:', context.substring(0, 100) + '...');
                 } catch (error) {
                     console.error('Error loading file contents:', error);
                 }
             }
 
             // Get LLM response
-            console.log('Requesting LLM response from:', llmProvider);
             let llmResponse;
             try {
+                const fullPrompt = context 
+                    ? `Context from uploaded files:\n${context}\n\nUser question: ${message}`
+                    : message;
+                
+                console.log('Sending to LLM with context:', !!context);
+                
                 switch (llmProvider) {
                     case 'gemini':
-                        llmResponse = await llmService.queryGemini(message, context);
+                        llmResponse = await llmService.queryGemini(fullPrompt);
                         break;
                     case 'claude':
-                        llmResponse = await llmService.queryClaude(message, context);
+                        llmResponse = await llmService.queryClaude(fullPrompt);
                         break;
                     default:
-                        throw new Error(`Invalid LLM provider: ${llmProvider}`);
+                        throw new Error('Invalid LLM provider');
                 }
-                console.log('Received LLM response');
             } catch (error) {
                 console.error('LLM error:', error);
-                return res.status(500).json({ 
-                    error: `Error getting LLM response: ${error.message}` 
-                });
+                throw new Error(`Error getting LLM response: ${error.message}`);
             }
 
             // Save to session
-            console.log('Saving to session:', sessionId);
             const session = await ChatSession.findById(sessionId);
             if (!session) {
-                console.error('Session not found:', sessionId);
                 return res.status(404).json({ error: 'Chat session not found' });
             }
 
@@ -100,19 +91,15 @@ class ChatController {
                     llmProvider 
                 }
             );
+            
             session.updatedAt = Date.now();
             await session.save();
-            console.log('Session updated successfully');
 
-            // Send response
-            console.log('Sending response to client');
+            console.log('Sending LLM response to client');
             res.json({ response: llmResponse });
         } catch (error) {
             console.error('Send message error:', error);
-            res.status(500).json({ 
-                error: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            });
+            res.status(500).json({ error: error.message });
         }
     }
 
