@@ -38,9 +38,13 @@ async function uploadFile(filePath, fileName) {
         console.log('Starting file upload process for:', fileName);
 
         // Read file content
+        const filePath = 'C://Users/kazuj/Desktop/Kaz/testfile.txt';
         const content = await fs.promises.readFile(filePath, 'utf8');
-        if (!content || content.length === 0) {
-            throw new Error('File is empty');
+        const rawContent = fs.readFileSync(filePath);
+        console.log('File exists: ${fs.existsSync(filePath)}');
+        console.log(`Raw Buffer: [${rawContent}]`);
+        if (!content) {
+            throw new Error('File is empty POPO');
         }
 
         // Store the file in MongoDB
